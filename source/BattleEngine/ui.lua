@@ -1,5 +1,5 @@
 Ui = {}
-
+local time = 0
 local buttonNames = {'fight', 'act', 'item', 'mercy'}
 local buttonImages = {}
 local buttonQuads = {}
@@ -134,6 +134,9 @@ local function stats()
         else
             drawText(Player.stats.hp .. " / " .. Player.stats.maxhp, 289 + (Player.stats.maxhp * 1.2), 400, {1, 1, 1}, {0, 0, 0})
         end
+    end
+    if Player.stats.hp <= 0 then
+        global.battleState = 'gameOver'
     end
 end
 
@@ -352,29 +355,47 @@ function Ui:initFight()
 end
 
 function Ui:draw()
-    buttons()
-    stats()
-    arena()
-    -- love.graphics.setColor(1, 1, 1, .5)
-    -- love.graphics.draw(ref)
-    if global.battleState == 'chooseEnemy' then
-        doChooseText()
-    elseif global.battleState == 'fight' then
-        doFightUi()
-    elseif global.battleState == 'act' then
-        doActText()
-    elseif global.battleState == 'item' then
-        doItemText()
-    elseif global.battleState == 'mercy' then
-        doMercyText()
+    if global.battleState ~= "gameOver" then
+        buttons()
+        stats()
+        arena()
+        --love.graphics.setColor(1, 1, 1, .5)
+        --love.graphics.draw(ref)
+        if global.battleState == 'chooseEnemy' then
+            doChooseText()
+        elseif global.battleState == 'fight' then
+            doFightUi()
+        elseif global.battleState == 'act' then
+            doActText()
+        elseif global.battleState == 'item' then
+            doItemText()
+        elseif global.battleState == 'mercy' then
+            doMercyText()
+        end
+    else
+        love.graphics.setColor(0, 0, 0, 1)
+        love.graphics.clear()
+        love.graphics.setBackgroundColor(0, 0, 0, 1)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.setFont(fonts.determination)
+        drawText('GAME OVER', 320 - fonts.determination:getWidth('GAME OVER')/2, 240 - fonts.determination:getHeight('GAME OVER')/2, {1, 1, 1}, {0, 0, 0})
+        drawText('womp womp', 320 - fonts.determination:getWidth('GAME OVER')/2, 240 - fonts.determination:getHeight('GAME OVER'), {1, 1, 1}, {0, 0, 0})
+        drawText('game closes in maybe '..time-(10).."secs", 320 - fonts.determination:getWidth('GAME OVER')/2, 240 - fonts.determination:getHeight('GAME OVER')*2, {1, 1, 1}, {0, 0, 0})
     end
 end
 
 function Ui:update(dt)
-    updateArena()
-    if global.battleState == 'fight' then
-        updateFightUi(dt)
-    end
+    if global.battleState ~= "gameOver" then
+        updateArena()
+        if global.battleState == 'fight' then
+            updateFightUi(dt)
+        end
+    else
+        time = time + dt
+        if time > 20 then
+            love.event.quit()
+        end
+     end
 end
 
 return Ui
