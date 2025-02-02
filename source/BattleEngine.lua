@@ -77,6 +77,7 @@ function doFlee()
     Writer:setParams("[clear]* Don't waste my time.", 85, 306, fonts.determination, 0.02, 1)
 end
 
+
 function useItem()
     local ChosenItem = Player.inventory[global.subChoice + 1]
 
@@ -102,13 +103,21 @@ function useItem()
     if itemManager:getPropertyfromID(ChosenItem, 'type') == 'weapon' then
         local lastWeapon = Player.stats.weapon
         Player.stats.weapon = ChosenItem
+<<<<<<< Updated upstream
         Player.inventory[global.subChoice + 1] = lastWeapon
+=======
+        ChosenItem = lastWeapon
+>>>>>>> Stashed changes
     end
 
     if itemManager:getPropertyfromID(ChosenItem, 'type') == 'armor' then
         local lastArmor = Player.stats.armor
         Player.stats.armor = ChosenItem
+<<<<<<< Updated upstream
         Player.inventory[global.subChoice + 1] = lastArmor
+=======
+        ChosenItem = lastArmor
+>>>>>>> Stashed changes
     end
 end
 function startEnemyTurn()
