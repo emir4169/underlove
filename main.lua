@@ -1,9 +1,12 @@
 local debugMode = true
 local FPS = 30
-
+local lib_path = love.filesystem.getSaveDirectory() .. "/libraries"
+local extension = jit.os == "Windows" and "dll" or jit.os == "Linux" and "so" or jit.os == "OSX" and "dylib"
+package.cpath = string.format("%s;%s/?.%s", package.cpath, lib_path, extension)
 currentEncounter = 'testEnemy'
 Enemies = require('assets.enemies.' .. currentEncounter)
-
+imgui = require "cimgui" -- cimgui is the folder containing the Lua module (the "src" folder in the git repository)
+local ffi = require("ffi")
 local function loadEnemy()
 	package.loaded[Enemies] = nil
 	Enemies = require('assets.enemies.' .. currentEncounter)
@@ -17,33 +20,58 @@ function reload()
 end
 
 function love.keypressed(key)
-    if key == 'up' then
-        input.up = true
-    elseif key == 'down' then
-        input.down = true
-    elseif key == 'left' then
-        input.left = true
-    elseif key == 'right' then
-        input.right = true
-    elseif key == 'z' or key == 'return' then
-        input.primary = true
-    elseif key == 'x' or key == 'rshift' or key == 'lshift' then
-        input.secondary = true
-    elseif key == "f4" then
-		fullscreen = not fullscreen
-		love.window.setFullscreen(fullscreen, "desktop")
-	end
-	if debugMode then
-		if key == '1' then
-			love.graphics.captureScreenshot('screenie.png') 
-		elseif key == 'r' then
-			reload()
+	imgui.love.KeyPressed(key)
+    if not imgui.love.GetWantCaptureKeyboard() then
+		imgui.love.RunShortcuts(key)
+    	if key == 'up' then
+    	    input.up = true
+    	elseif key == 'down' then
+    	    input.down = true
+    	elseif key == 'left' then
+    	    input.left = true
+    	elseif key == 'right' then
+    	    input.right = true
+    	elseif key == 'z' or key == 'return' then
+    	    input.primary = true
+    	elseif key == 'x' or key == 'rshift' or key == 'lshift' then
+    	    input.secondary = true
+    	elseif key == "f4" then
+			fullscreen = not fullscreen
+			love.window.setFullscreen(fullscreen, "desktop")
+		end
+		if debugMode then
+			if key == '1' then
+				love.graphics.captureScreenshot('screenie.png') 
+			elseif key == 'r' then
+				reload()
+			end
 		end
 	end
 end
 
 function love.load(arg)
+    local saveDir = "libraries/"
+    local sourceFile = "cimgui.so"
+    local destinationFile = saveDir .. sourceFile
+
+    -- Ensure the libraries directory exists
+    love.filesystem.createDirectory(saveDir)
+
+    -- Read the source file from the .love file
+    local fileData, err = love.filesystem.read(sourceFile)
+    if fileData then
+        -- Write it to the save directory
+        local success, errorMsg = love.filesystem.write(destinationFile, fileData)
+        if success then
+            print("File copied successfully!")
+        else
+            print("Error copying file:", errorMsg)
+        end
+    else
+        print("Error reading file:", err)
+    end
 	loadEnemy()
+	imgui.love.Init() 
 	love.audio.setVolume(1)
 	global = {gameState = 'BattleEngine', battleState = nil, choice = 0, subChoice = 0}
 
@@ -75,6 +103,8 @@ function love.load(arg)
 end
 
 function love.update(dt)
+	imgui.love.Update(dt)
+    imgui.NewFrame()
     if global.gameState == 'BattleEngine' then BattleEngine:update(dt) end
     input = {up = false, down = false, left = false, right = false, primary = false, secondary = false}
 end
@@ -102,7 +132,32 @@ function love.draw()
     connect()
     if global.gameState == 'BattleEngine' then BattleEngine:draw() end
     disconnect()
+	if imgui.Begin("test", nil, imgui.ImGuiWindowFlags_MenuBar) then
+        local action = function() print("Shortcut processed.") end
+        local shortcut = imgui.love.Shortcut({"ctrl", "shift"}, "s", action, true, false)
 
+        if imgui.BeginMenuBar() then
+            if imgui.BeginMenu("File") then
+                -- disable MenuItem if shortcut is not enabled
+                if imgui.MenuItem_Bool("Save", shortcut.text, nil, shortcut.enabled) then
+                    shortcut.action()
+                end
+                imgui.EndMenu()
+            end
+            imgui.EndMenuBar()
+        end
+		-- get a int * to Player.stats.hp using ai
+		plhp =    ffi.new("int[1]", Player.stats.hp)
+		plmaxhp = ffi.new("int[1]", Player.stats.maxhp)
+		pllove =  ffi.new("int[1]", Player.stats.love)
+		if imgui.SliderInt("HP", plhp, 1,20)       then Player.stats.hp = plhp[0] end
+		if imgui.SliderInt("Max HP", plmaxhp, 1,20)then Player.stats.maxhp = plmaxhp[0] end
+		if imgui.SliderInt("Love", pllove, 1,20)   then Player.stats.love = pllove[0] end
+
+    end
+    imgui.End()
+    imgui.Render()
+    imgui.love.RenderDrawLists()
 	if debugMode then
 		local width = 230
 		local height = 81
@@ -177,4 +232,42 @@ function love.run()
 			love.timer.sleep(timerSleep() - (endT - startT))
 		end
 	end
+end
+
+love.keyreleased = function(key, ...)
+    imgui.love.KeyReleased(key)
+    if not imgui.love.GetWantCaptureKeyboard() then
+        -- your code here 
+    end
+end
+
+love.textinput = function(t)
+    imgui.love.TextInput(t)
+    if imgui.love.GetWantCaptureKeyboard() then
+        -- your code here 
+    end
+end
+
+love.quit = function()
+    return imgui.love.Shutdown()
+end
+love.mousemoved = function(x, y, ...)
+    imgui.love.MouseMoved(x, y)
+    if not imgui.love.GetWantCaptureMouse() then
+        -- your code here
+    end
+end
+
+love.mousepressed = function(x, y, button, ...)
+    imgui.love.MousePressed(button)
+    if not imgui.love.GetWantCaptureMouse() then
+        -- your code here 
+    end
+end
+
+love.mousereleased = function(x, y, button, ...)
+    imgui.love.MouseReleased(button)
+    if not imgui.love.GetWantCaptureMouse() then
+        -- your code here 
+    end
 end
