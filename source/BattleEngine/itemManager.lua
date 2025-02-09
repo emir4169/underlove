@@ -65,5 +65,8 @@ function itemManager:getPropertyfromID(id, property)
         return itemOnUse[id]
     end
 end
+function itemManager:getNames()
+    return itemNames
+end
 
 return itemManager
