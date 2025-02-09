@@ -1,17 +1,9 @@
-local itemManager = require('source.BattleEngine.itemManager')
 local debugMode = true
 local FPS = 30
-local hpslider = {value = 20}
-local nuklear = require 'nuklear'
-local firstitemcombo = {value = 7, items = itemManager:getNames()}
-local seconditemcombo= {value = 4, items = itemManager:getNames()}
-local thirditemcombo = {value = 1, items = itemManager:getNames()}
-local fourthitemcombo= {value = 1, items = itemManager:getNames()}
-local fifthitemcombo = {value = 5, items = itemManager:getNames()}
-local sixthitemcombo = {value = 6, items = itemManager:getNames()}
-local ui
+
 currentEncounter = 'testEnemy'
 Enemies = require('assets.enemies.' .. currentEncounter)
+
 local function loadEnemy()
 	package.loaded[Enemies] = nil
 	Enemies = require('assets.enemies.' .. currentEncounter)
@@ -24,8 +16,7 @@ function reload()
 	playMusic = true
 end
 
-function love.keypressed(key,scancode,isrepeat)
-	ui:keypressed(key, scancode, isrepeat)
+function love.keypressed(key)
     if key == 'up' then
         input.up = true
     elseif key == 'down' then
@@ -52,7 +43,6 @@ function love.keypressed(key,scancode,isrepeat)
 end
 
 function love.load(arg)
-	ui = nuklear.newUI()
 	loadEnemy()
 	love.audio.setVolume(1)
 	global = {gameState = 'BattleEngine', battleState = nil, choice = 0, subChoice = 0}
@@ -85,42 +75,6 @@ function love.load(arg)
 end
 
 function love.update(dt)
-	ui:frameBegin()
-	if ui:windowBegin('Debug', 100, 100, 200, 330,
-			'border', 'title', 'movable') then
-		ui:layoutRow('dynamic', 30, 1)
-		if ui:combobox(firstitemcombo, require('source.BattleEngine.itemManager'):getNames()) then
-			Player.inventory[1] = firstitemcombo.value
-		end
-		if ui:combobox(seconditemcombo, require('source.BattleEngine.itemManager'):getNames()) then
-			Player.inventory[2] = seconditemcombo.value
-		end
-		if ui:combobox(thirditemcombo, require('source.BattleEngine.itemManager'):getNames()) then
-			Player.inventory[3] = thirditemcombo.value
-		end
-		if ui:combobox(fourthitemcombo, require('source.BattleEngine.itemManager'):getNames()) then
-			Player.inventory[4] = fourthitemcombo.value
-		end
-		if ui:combobox(fifthitemcombo, require('source.BattleEngine.itemManager'):getNames()) then
-			Player.inventory[5] = fifthitemcombo.value
-		end
-		if ui:combobox(sixthitemcombo, require('source.BattleEngine.itemManager'):getNames()) then
-			Player.inventory[6] = sixthitemcombo.value
-		end
-
-		ui:layoutRow('dynamic', 30, 3)
-		ui:label("HP")
-		value = ui:slider(0, hpslider, Player.stats.maxhp, 1)
-		ui:label('Buttons:')
-		if ui:button('set HP') then
-			Player.stats.hp = hpslider.value
-		end
-		if ui:button('KILL') then
-			Player.stats.hp = 0
-		end
-	end
-	ui:windowEnd()
-	ui:frameEnd()
     if global.gameState == 'BattleEngine' then BattleEngine:update(dt) end
     input = {up = false, down = false, left = false, right = false, primary = false, secondary = false}
 end
@@ -148,7 +102,7 @@ function love.draw()
     connect()
     if global.gameState == 'BattleEngine' then BattleEngine:draw() end
     disconnect()
-	ui:draw()
+
 	if debugMode then
 		local width = 230
 		local height = 81
@@ -223,27 +177,4 @@ function love.run()
 			love.timer.sleep(timerSleep() - (endT - startT))
 		end
 	end
-end
-function love.keyreleased(key, scancode)
-	ui:keyreleased(key, scancode)
-end
-
-function love.mousepressed(x, y, button, istouch, presses)
-	ui:mousepressed(x, y, button, istouch, presses)
-end
-
-function love.mousereleased(x, y, button, istouch, presses)
-	ui:mousereleased(x, y, button, istouch, presses)
-end
-
-function love.mousemoved(x, y, dx, dy, istouch)
-	ui:mousemoved(x, y, dx, dy, istouch)
-end
-
-function love.textinput(text)
-	ui:textinput(text)
-end
-
-function love.wheelmoved(x, y)
-	ui:wheelmoved(x, y)
 end
